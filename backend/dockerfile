@@ -1,0 +1,28 @@
+FROM composer:2 AS builder
+WORKDIR /app
+COPY . .
+RUN composer install --no-dev --optimize-autoloader
+
+FROM php:8.2-fpm-alpine
+WORKDIR /var/www/html
+
+# Instalar dependencias necesarias para compilar extensiones
+RUN apk add --no-cache \
+    oniguruma-dev \
+    libxml2-dev \
+    libzip-dev \
+    icu-dev \
+    bash \
+    git \
+    unzip \
+    autoconf \
+    make \
+    g++ \
+    gcc
+
+# Instalar extensiones de PHP
+RUN docker-php-ext-install pdo_mysql mbstring tokenizer xml ctype json intl
+
+COPY --from=builder /app /var/www/html
+EXPOSE 9000
+CMD ["php-fpm"]
